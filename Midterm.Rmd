@@ -1,0 +1,73 @@
+---
+title: "Midterm"
+author: "Alexis Adams-Clark"
+date: "4/23/2019"
+output: html_document
+---
+
+```{r setup, message = FALSE, warning = FALSE, error = FALSE}
+#install.packages("glue")
+library(tidyverse)
+library(rio)
+library(glue)
+library(purrr)
+library(janitor)
+library(repurrrsive)
+
+knitr::opts_chunk$set(message = FALSE, error = FALSE, warning = FALSE)
+```
+
+```{r Question 1}
+#PART A:
+
+#Question A.1: Use the function above to download all the data for each of the past 4 school years and bind it into a single data frame, using a single function (i.e., one line of code). Note, this may take a minute or two to run, depending on your Internet speed.
+
+download_file <- function(year) {
+    link <- glue::glue("https://www.oregon.gov/ode/educator-resources/assessment/TestResults20{year}/pagr_schools_ela_raceethnicity_{year-1}{year}.xlsx")
+    rio::import(link, setclass = "tibble", na = c("-", "--", "*"))
+}
+
+data <- map_df(c(15:18), download_file)
+
+#Conduct some basic data cleaning to make your data file look like the following. Filter for only student groups coded as "White" or "Hispanic/Latino". Select variables related to the number of students in each of the levels (1:4), and not percentages or collapsed levels. Remove any row that has missing data in any of the n variables.
+
+data <- data %>% 
+  clean_names() %>% 
+  filter(student_group == "White" | student_group == "Hispanic/Latino") %>% 
+  select(academic_year, district, school, student_group, grade_level, number_level_1, number_level_2, number_level_3, number_level_4)
+
+gathered1 <- data %>% 
+  gather(level, n, 6:9) %>% 
+  filter(!is.na(n)) %>% 
+  mutate(level = parse_number(level)) %>% 
+  arrange(academic_year, district, student_group, grade_level)
+gathered1
+```
+
+
+```{r Number 2}
+#Number A.2: Calculate the cumulative n for each school by student group, grade, and academic year. 
+
+gathered2 <- gathered1 %>%
+  group_by(school, student_group, grade_level, academic_year) %>% 
+  mutate(cn = cumsum(n))
+gathered2
+head(gathered2)
+  
+```
+
+
+```{r Number 3}
+#Number A.3: Reformat the data so it looks like the below, removing n and filling by cn. Remove rows that have missing data for either student group.
+
+gathered3 <- gathered2 %>%
+  select(-n) %>% 
+  spread(student_group, cn) %>% 
+  clean_names() %>%
+  filter(!is.na(hispanic_latino)) %>% 
+  filter(!is.na(white))
+gathered3
+head(gathered3)
+```
+
+
