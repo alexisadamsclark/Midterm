@@ -20,6 +20,7 @@ library(repurrrsive)
 knitr::opts_chunk$set(message = FALSE, error = FALSE, warning = FALSE)
 ```
 
+
 ```{r A Question 1}
 
 #PART A:
@@ -44,6 +45,7 @@ gathered1 <- data %>%
   gather(level, n, 6:9) %>% 
   filter(!is.na(n)) %>% 
   mutate(level = parse_number(level)) %>% 
+  mutate(grade_level = parse_number(grade_level)) %>% 
   arrange(academic_year, district, student_group, grade_level)
 gathered1
 
@@ -112,6 +114,7 @@ by_school_grade <- d %>%
 
 df <- by_school_grade %>% 
   mutate(gap = map_dbl(data, gap, "white", "hispanic_latino")) 
+df
 
 str(by_school_grade$data[[1]])
 ```
@@ -128,12 +131,13 @@ extract_dist <- function(ob) {
 #install.packages("rcartocolor")
 library(rcartocolor)
 
+#Ehh...I tried to remove all the weird "SD" and "4J" characters, and I managed to get most of them. But it sure is difficult!
 plots <- df %>% 
   mutate(district = map_chr(data, extract_dist)) %>% 
   mutate(district = str_replace_all(district, "SD", "")) %>% 
   mutate(district = str_replace_all(district, '[[:digit:]]+', "")) %>% 
   mutate(district = str_replace_all(district, " J", "")) %>% 
-  mutate(district = str_replace_all(district, " ", "")) %>% 
+  mutate(district = str_replace_all(district, 'J ', "")) %>% 
   select(-data) %>% 
   group_by(school, district, academic_year) %>% 
   nest() %>% 
