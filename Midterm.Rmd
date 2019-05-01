@@ -95,11 +95,6 @@ gap <- function(data, ref, foc) {
                          x / x[length(x)])
     sqrt(2)*qnorm(auc)
 }
-
-#Example: 
-d <- gathered3
-gap(d[1:4, ], "white", "hispanic_latino")
-
 ```
 
 
@@ -107,6 +102,18 @@ gap(d[1:4, ], "white", "hispanic_latino")
 
 #Question B.1: Estimate an achievement gap effect size for every school in the state that reported data on both student groups (i.e., using the data we created above), for each grade level in each academic year.
 
+#Example: 
+d <- gathered3
+
+gap(d[1:4, ], "white", "hispanic_latino")
+
+by_school_grade <- d %>%
+    nest(-school, -grade_level, -academic_year)
+
+by_school_grade %>% 
+  mutate(gap = map_chr(data, gap, "white", "hispanic_latino")) 
+
+by_school_grade$data
 
 ```
 
@@ -114,6 +121,12 @@ gap(d[1:4, ], "white", "hispanic_latino")
 ```{r B Question 2}
 
 #Question B.2: The plot below shows the achievement gap estimates for one school by grade in Ashland School District during the 2017-18 school year. Produce a similar plot to the below (noting the school, academic year, and school district) for each of the first 100 unique school/year/district combinations. Hint - you’ll want to use your effect size data from from the previous question, nest it, then apply slice(1:100). 
+
+d %>%
+  nest(-district, -academic_year, -school, -grade_level) %>% 
+  mutate(gap = map_chr(data, gap, "white", "hispanic_latino")) %>% 
+  ggplot
+str(d$data)
 
 ```
 
