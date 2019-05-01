@@ -125,21 +125,29 @@ extract_dist <- function(ob) {
     ob[["district"]][1]
 }
 
-plot <- df %>% 
+#install.packages("rcartocolor")
+library(rcartocolor)
+
+plots <- df %>% 
   mutate(district = map_chr(data, extract_dist)) %>% 
+  mutate(district = str_replace_all(district, "SD", "")) %>% 
+  mutate(district = str_replace_all(district, '[[:digit:]]+', "")) %>% 
+  mutate(district = str_replace_all(district, " J", "")) %>% 
+  mutate(district = str_replace_all(district, " ", "")) %>% 
   select(-data) %>% 
   group_by(school, district, academic_year) %>% 
   nest() %>% 
   slice(1:10) %>% 
-  mutate(plot = map2(data, school, ~
-      ggplot(.x, aes(grade_level, gap)) +
-          geom_col(aes(fill = gap)) +
-        coord_flip() +
-          labs(title = glue("Gap: {.y}"))))
-
-#Talk about title - have to use pmap
-
-
+  mutate(plot = pmap(list(data, school, district, academic_year), ~
+          ggplot(..1, aes(grade_level, gap, fill = gap)) +
+          geom_col() +
+          coord_flip() + 
+          scale_fill_carto_c(palette = "Earth", direction = -1, limits= c(-1.5, 1.5)) + 
+          theme_minimal() +
+          geom_hline(yintercept = 0, size = 2, color = "#ADC3B6") +
+          theme(legend.position = "bottom", legend.key.width = unit(3, "cm"), legend.title = element_blank()) +
+          labs(title = glue("Achievement Gap Estimates: {..2}"), subtitle = "Students coded as White as compared to those coded as Hispanic/Latino\n", caption = glue("{..4} School year, {..3} School District, Oregon"), y = "\nEffect Size", x = "Grade\n")))
+plots$plot
 
 ##To check mine against your example in the assignment....
 exampleplot <- df %>% 
@@ -149,10 +157,14 @@ exampleplot <- df %>%
   nest() %>% 
   filter(school == "Ashland Middle School") %>% 
   mutate(plot = map2(data, school, ~
-      ggplot(.x, aes(grade_level, gap)) +
-          geom_col(aes(fill = gap)) +
-        coord_flip() +
-          labs(title = glue("Gap: {.y}"))))
+          ggplot(.x, aes(grade_level, gap, fill = gap)) +
+          geom_col() +
+          coord_flip() + 
+          scale_fill_carto_c(palette = "Earth", direction = -1, limits= c(-1.5, 1.5)) + 
+          theme_minimal() +
+          geom_hline(yintercept = 0, size = 2, color = "#ADC3B6") +
+          theme(legend.position = "bottom", legend.key.width = unit(3, "cm"), legend.title = element_blank()) +
+          labs(title = glue("Gap: {.y}"),  y = "\nEffect Size", x = "Grade\n", subtitle = "Students coded as White as compared to those coded as Hispanic/Latino\n")))
 exampleplot$plot[[4]]
 #looks the same WOO
 
