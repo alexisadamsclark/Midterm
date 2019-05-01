@@ -110,11 +110,10 @@ gap(d[1:4, ], "white", "hispanic_latino")
 by_school_grade <- d %>%
     nest(-school, -grade_level, -academic_year)
 
-by_school_grade %>% 
-  mutate(gap = map_chr(data, gap, "white", "hispanic_latino")) 
+df <- by_school_grade %>% 
+  mutate(gap = map_dbl(data, gap, "white", "hispanic_latino")) 
 
-by_school_grade$data
-
+str(by_school_grade$data[[1]])
 ```
 
 
@@ -122,11 +121,42 @@ by_school_grade$data
 
 #Question B.2: The plot below shows the achievement gap estimates for one school by grade in Ashland School District during the 2017-18 school year. Produce a similar plot to the below (noting the school, academic year, and school district) for each of the first 100 unique school/year/district combinations. Hint - you’ll want to use your effect size data from from the previous question, nest it, then apply slice(1:100). 
 
-d %>%
-  nest(-district, -academic_year, -school, -grade_level) %>% 
-  mutate(gap = map_chr(data, gap, "white", "hispanic_latino")) %>% 
-  ggplot
-str(d$data)
+extract_dist <- function(ob) {
+    ob[["district"]][1]
+}
+
+plot <- df %>% 
+  mutate(district = map_chr(data, extract_dist)) %>% 
+  select(-data) %>% 
+  group_by(school, district, academic_year) %>% 
+  nest() %>% 
+  slice(1:10) %>% 
+  mutate(plot = map2(data, school, ~
+      ggplot(.x, aes(grade_level, gap)) +
+          geom_col(aes(fill = gap)) +
+        coord_flip() +
+          labs(title = glue("Gap: {.y}"))))
+
+#Talk about title - have to use pmap
+
+
+
+##To check mine against your example in the assignment....
+exampleplot <- df %>% 
+  mutate(district = map_chr(data, extract_dist)) %>% 
+  select(-data) %>% 
+  group_by(school, district, academic_year) %>% 
+  nest() %>% 
+  filter(school == "Ashland Middle School") %>% 
+  mutate(plot = map2(data, school, ~
+      ggplot(.x, aes(grade_level, gap)) +
+          geom_col(aes(fill = gap)) +
+        coord_flip() +
+          labs(title = glue("Gap: {.y}"))))
+exampleplot$plot[[4]]
+#looks the same WOO
+
+
 
 ```
 
